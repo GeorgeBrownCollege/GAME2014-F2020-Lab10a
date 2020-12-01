@@ -39,7 +39,7 @@ public class PlayerController : MonoBehaviour
      private void _FireBullet()
     {
         // delay bullet firing 
-        if(Time.frameCount % 60 == 0 && BulletManager.Instance().HasBullets())
+        if(Time.frameCount % fireDelay == 0 && BulletManager.Instance().HasBullets())
         {
             BulletManager.Instance().GetBullet(transform.position, Vector3.up);
         }

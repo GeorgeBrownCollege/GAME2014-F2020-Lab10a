@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Cinemachine;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -37,6 +38,14 @@ public class PlayerBehaviour : MonoBehaviour
     public AudioSource[] hitSounds;
     public AudioSource dieSound;
 
+    [Header("Special FX")] 
+    public CinemachineVirtualCamera vcam1;
+    public CinemachineBasicMultiChannelPerlin perlin;
+    public float maxShakeTime;
+    public float shakeIntensity;
+    public float shakeTimer;
+    public bool isCameraShaking;
+
 
     private Rigidbody2D m_rigidBody2D;
     private SpriteRenderer m_spriteRenderer;
@@ -49,11 +58,18 @@ public class PlayerBehaviour : MonoBehaviour
     {
         health = 100;
         lives = 3;
+        maxShakeTime = 0.3f;
+
+        shakeTimer = maxShakeTime;
 
         m_rigidBody2D = GetComponent<Rigidbody2D>();
         m_spriteRenderer = GetComponent<SpriteRenderer>();
         m_animator = GetComponent<Animator>();
         m_dustTrail = GetComponentInChildren<ParticleSystem>();
+
+        // for screen shake
+        vcam1 = FindObjectOfType<CinemachineVirtualCamera>();
+        perlin = vcam1.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
     }
 
     // Update is called once per frame
@@ -62,6 +78,17 @@ public class PlayerBehaviour : MonoBehaviour
         _LookInFront();
         _LookAhead();
         _Move();
+
+        if (isCameraShaking)
+        {
+            shakeTimer -= Time.deltaTime;
+            if (shakeTimer <= 0.0f)
+            {
+                perlin.m_AmplitudeGain = 0.0f;
+                isCameraShaking = false;
+                shakeTimer = maxShakeTime;
+            }
+        }
     }
 
     private void _LookInFront()
@@ -169,6 +196,7 @@ public class PlayerBehaviour : MonoBehaviour
                 isJumping = true;
                 jumpSound.Play(); // impulse sound
                 CreateDustTrail();
+                
             }
             else
             {
@@ -214,7 +242,12 @@ public class PlayerBehaviour : MonoBehaviour
     {
         if (other.gameObject.CompareTag("Enemy"))
         {
-            TakeDamage(15);
+            // delay enemy damage 
+            if (Time.frameCount % 20 == 0)
+            {
+                TakeDamage(5);
+            }
+            
         }
     }
 
@@ -246,6 +279,8 @@ public class PlayerBehaviour : MonoBehaviour
 
         PlayHitSound();
 
+        ShakeCamera();
+
         if (health <= 0)
         {
             LoseLife();
@@ -263,6 +298,12 @@ public class PlayerBehaviour : MonoBehaviour
     {
         var randomHitSound = hitSounds[UnityEngine.Random.Range(0, 3)];
         randomHitSound.Play();
+    }
+
+    private void ShakeCamera()
+    {
+        perlin.m_AmplitudeGain = shakeIntensity;
+        isCameraShaking = true;
     }
 
 }
